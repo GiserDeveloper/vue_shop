@@ -41,7 +41,12 @@
               @click="showEditDialog(scope.row.id)"
             ></el-button>
             <!-- 删除按钮 -->
-            <el-button type="danger" icon="el-icon-delete" size="mini"></el-button>
+            <el-button
+              type="danger"
+              icon="el-icon-delete"
+              size="mini"
+              @click="removeUserById(scope.row.id)"
+            ></el-button>
             <!-- 分配角色按钮 -->
             <el-tooltip
               class="item"
@@ -92,12 +97,7 @@
 
     <!-- 修改用户的对话框 -->
     <el-dialog title="修改用户" :visible.sync="editDialogVisible" width="50%" @close="editDialogClosed">
-      <el-form
-        :model="editForm"
-        :rules="editFormRules"
-        ref="editFormRef"
-        label-width="70px"
-      >
+      <el-form :model="editForm" :rules="editFormRules" ref="editFormRef" label-width="70px">
         <el-form-item label="用户名">
           <el-input v-model="editForm.username" disabled></el-input>
         </el-form-item>
@@ -293,7 +293,10 @@ export default {
       this.$refs.editFormRef.validate(async valid => {
         if (valid) {
           // 发起修改用户信息的数据请求
-          const { data: res } = await this.$http.put('users/' + this.editForm.id, { email: this.editForm.email, mobile: this.editForm.mobile })
+          const { data: res } = await this.$http.put(
+            'users/' + this.editForm.id,
+            { email: this.editForm.email, mobile: this.editForm.mobile }
+          )
           if (res.meta.status !== 200) {
             return this.$message.error('更新用户信息失败！')
           } else {
@@ -306,6 +309,33 @@ export default {
           }
         }
       })
+    },
+    // 根据ID删除对应的用户信息
+    async removeUserById(id) {
+      // 弹框询问用户是否删除数据
+      const confirmResult = await this.$confirm(
+        '此操作将永久删除该用户, 是否继续?',
+        '提示',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      ).catch(err => err)
+      // 如果用户确认删除，则返回值为字符串 confirm
+      // 如果用户取消了删除，则返回值为字符串 cancel
+      if (confirmResult !== 'confirm') {
+        return this.$message.info('已取消删除')
+      } else {
+        // 发起删除请求
+        const { data: res } = await this.$http.delete('users/' + id)
+        if (res.meta.status !== 200) {
+          return this.$message.error('删除用户失败！')
+        }
+        this.$message.success('删除用户成功！')
+        // 刷新用户列表
+        this.getUserList()
+      }
     }
   }
 }
